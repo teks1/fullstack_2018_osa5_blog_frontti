@@ -159,7 +159,9 @@ class App extends React.Component {
           <p>{this.state.user.name} logged in <button onClick={this.logout}>logout</button></p>
           {blogForm()}
           <h2>Blogs</h2>
-          {this.state.blogs.map(blog => 
+          {this.state.blogs.sort(function(a, b) {
+          return b.likes - a.likes})
+          .map(blog => 
           <Blog 
           key={blog.id} 
           blog={blog}
