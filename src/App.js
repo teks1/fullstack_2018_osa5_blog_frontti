@@ -1,6 +1,9 @@
 import React from 'react'
 import Blog from './components/Blog'
 import Notification from './components/Notification'
+import Togglable from './components/Togglable'
+import LoginForm from './components/LoginForm'
+import BlogForm from './components/BlogForm'
 import blogService from './services/blogs'
 import loginService from './services/login'
 
@@ -85,80 +88,65 @@ class App extends React.Component {
     window.location.reload()
   }
 
-  handleLoginFieldChange = (event) => {
-    //console.log(event.target.name)
+  handleChange = (event) => {
     this.setState({ [event.target.name]: event.target.value })
   }
 
-  handleNewBlogFieldChange = (event) => {
-    this.setState({ [event.target.name]: event.target.value })
+  toggleLikeOf = (id) => {
+    return () => {
+      const blog = this.state.blogs.find(b => b.id === id)
+      const changedBlog = {...blog, likes: blog.likes + 1 }
+
+      blogService
+      .update(id, changedBlog)
+      .then(changedBlog => {
+        this.setState({
+          blogs: this.state.blogs.map(b => b.id !== id ? b : changedBlog)
+        })
+      })
+      .catch(error => {
+        this.setState({
+          error: `no such blog`,
+          blogs: this.state.blogs.filter(b => b.id !== id)
+        })
+        setTimeout(() => {
+          this.setState({ error: null })
+        }, 5000)
+      })
+    }
+  }
+
+  toggleDelete = (id) => {
+    return () => {
+      blogService.deleteOne(id)
+      window.location.reload()
+    }
   }
 
   render() {
 
     const loginForm = () => (
-      <div>
-        <h2>Log in</h2>
-        <form onSubmit={this.login}>
-          <div>
-            Username
-            <input
-              type="text"
-              name="username"
-              value={this.state.username}
-              onChange={this.handleLoginFieldChange}
-              />
-          </div>
-          <div>
-            Password
-            <input
-              type="password"
-              name="password"
-              value={this.state.password}
-              onChange={this.handleLoginFieldChange}
-            />
-          </div>
-          <button type="submit">login</button>
-          </form>
-      </div>
+      <Togglable buttonLabel="login">
+        <LoginForm
+          visible={this.state.visible}
+          username={this.state.username}
+          password={this.state.password}
+          handleChange={this.handleChange}
+          handleSubmit={this.login}
+        />
+      </Togglable>
     )
-
     const blogForm = () => (
-      <div>
-        <h2>Add new blog</h2>
-        <form onSubmit={this.addBlog}>
-        <div>
-            Title
-            <input
-              type="text"
-              name="title"
-              value={this.state.title}
-              onChange={this.handleNewBlogFieldChange}
-              />
-          </div>
-          <div>
-            Author
-            <input
-              type="text"
-              name="author"
-              value={this.state.author}
-              onChange={this.handleNewBlogFieldChange}
-            />
-          </div>
-          <div>
-            Url
-            <input
-              type="text"
-              name="url"
-              value={this.state.url}
-              onChange={this.handleNewBlogFieldChange}
-            />
-          </div>
-          <button type="submit">save</button>
-        </form>
-      </div>
+     
+        <BlogForm
+          title={this.state.title}
+          author={this.state.author}
+          url={this.state.url}
+          handleChange={this.handleChange}
+          handleSubmit={this.addBlog}
+        />
     )
-
+    
     return (
       <div>
         <h1>Topic</h1>
@@ -170,12 +158,19 @@ class App extends React.Component {
         <div>
           <p>{this.state.user.name} logged in <button onClick={this.logout}>logout</button></p>
           {blogForm()}
+          <h2>Blogs</h2>
+          {this.state.blogs.map(blog => 
+          <Blog 
+          key={blog.id} 
+          blog={blog}
+          toggleLike={this.toggleLikeOf(blog.id)}
+          toggleDelete={this.toggleDelete(blog.id)}
+          />
+        )}
         </div>
         }
-        <h2>Blogs</h2>
-        {this.state.blogs.map(blog => 
-          <Blog key={blog._id} blog={blog}/>
-        )}
+        
+        
       </div>
     )
   }
